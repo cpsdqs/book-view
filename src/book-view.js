@@ -1,6 +1,12 @@
 import EventEmitter from 'events';
 import { Spring, clamp } from './animation';
 
+// #bv-book-view
+// |- .bv-background
+// |- .bv-header
+// |  |- .bv-content-title
+// |- .bv-pages
+// |- .bv-footer
 const container = document.createElement('div');
 container.id = 'bv-book-view';
 const background = document.createElement('div');
@@ -34,9 +40,13 @@ let context = {};
 let lightMode = false;
 let currentPage = 0;
 
+// list of mounted page nodes, for easy diffing in onAnimationUpdate
 const mountedPageNodes = [];
 
+// open state (0: closed, 1: open)
 const openSpring = new Spring(0.85, 0.4);
+
+// current page position
 const positionSpring = new Spring(1, 0.4);
 
 // handles book view visibility and page positions
@@ -151,7 +161,7 @@ const onAnimationUpdate = () => {
 openSpring.on('update', onAnimationUpdate);
 positionSpring.on('update', onAnimationUpdate);
 
-// update page states
+// updates page states
 function updatePages () {
     openSpring.target = isOpen ? 1 : 0;
     openSpring.start();
@@ -164,7 +174,7 @@ function updatePages () {
     positionSpring.start();
 }
 
-// typeset paragraphs and create DOM nodes
+// typesets paragraphs and create DOM nodes
 function typeset () {
     layout = {
         twoPages: window.innerWidth > 900,
@@ -174,6 +184,7 @@ function typeset () {
 
     pageContainer.style.height = layout.pageHeight + 'px';
 
+    // typeset and split into pages
     let currentPageHeight = 0;
     let currentPage = [];
     typesetPages = [currentPage];
@@ -200,10 +211,13 @@ function typeset () {
         currentPage.push(lastLine)
     }
 
+    // create DOM nodes
     pageNodes = [];
 
+    // for quote joining (see below)
     let prevLine = null;
     let prevPar = null;
+
     let pageNumber = 0;
 
     for (const typesetPage of typesetPages) {
@@ -249,7 +263,7 @@ function typeset () {
             prevPar = par;
 
             if (par.separator) {
-                node.classList.add('separator');
+                node.classList.add('bv-separator');
             }
 
             const contents = line.content.map(item => ({ item }));

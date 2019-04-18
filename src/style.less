@@ -125,6 +125,21 @@
                     }
                 }
 
+                &.bv-separator {
+                    position: relative;
+
+                    &::before {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 40px;
+                        border-top: 1px solid currentColor;
+                        opacity: .5;
+                        transform: translateX(-50%);
+                    }
+                }
+
                 a {
                     color: var(--bv-link-color);
                 }

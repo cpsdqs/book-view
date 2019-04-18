@@ -18,7 +18,7 @@ const bookView = window.bookView = {
     view,
     render (node) {
         if (!(node instanceof Node)) throw new Error('Can’t render non-DOM node');
-        const context = new dashset.Context();
+        const context = new dashset.Context(config);
         bookView.view.render(bookView.intoTypesettable(node, context), context);
     },
     knownHosts: {
