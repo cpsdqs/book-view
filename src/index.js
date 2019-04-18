@@ -13,6 +13,7 @@ import './style.less';
 view.setConfig(config);
 
 const bookView = window.bookView = {
+    config,
     intoTypesettable,
     view,
     render (node) {
@@ -59,7 +60,7 @@ const handleKnownHosts = () => {
 
 if (document.readyState === 'interactive') {
     // allow external scripts to register known hosts before running
-    setTimeout(handleKnownHosts, 0);
+    requestAnimationFrame(handleKnownHosts);
 } else {
     window.addEventListener('DOMContentLoaded', handleKnownHosts);
 }
