@@ -172,6 +172,9 @@ function updatePages () {
 
     positionSpring.target = currentPage;
     positionSpring.start();
+
+    if (config.light) container.classList.add('light');
+    else container.classList.remove('light');
 }
 
 // typesets paragraphs and create DOM nodes

@@ -26,6 +26,12 @@ While this is far from an ideal solution, this can be installed as a userscript 
 
 This also allows for configuration by setting properties on `window.bookView.config` in the script, which are partially documented [here](https://cpsdqs.github.io/dashset/docs/context.html).
 
+Additional `window.bookView.config` properties include:
+
+- `light`: set to `false` to disable the light theme
+- `openKey`: set to a string like `';'` to set the open key
+- `doubleParagraphs`: set to `true` to enable double-spaced paragraphs instead of indented paragraphs
+
 Additional known hosts can be added by simply doing:
 ```js
 window.bookView.knownHosts['website.name'] = () => {

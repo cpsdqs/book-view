@@ -5,6 +5,7 @@ const config = {
     codeFontSize: 11,
     openKey: ';',
     doubleParagraphs: false,
+    light: true,
 };
 
 import intoTypesettable from './dom-to-typesettable';
