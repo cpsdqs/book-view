@@ -52,7 +52,7 @@ const bookView = window.bookView = {
 const handleKnownHosts = () => {
     for (const hostname in bookView.knownHosts) {
         if (location.hostname === hostname) {
-            knownHosts[hostname]();
+            bookView.knownHosts[hostname]();
         }
     }
 };
