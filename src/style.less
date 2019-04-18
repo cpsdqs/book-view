@@ -85,9 +85,10 @@
                 position: absolute;
                 right: 2em;
                 opacity: .5;
-            }
-            &[data-pages-left='1']::after {
-                content: "1 page left";
+
+                &[data-pages-left='1']::after {
+                    content: "1 page left";
+                }
             }
             &[data-pages-left='0']::after {
                 content: "Last page";
@@ -100,6 +101,8 @@
             }
 
             .bv-line {
+                white-space: nowrap;
+
                 &.bv-align-justify {
                     position: relative;
                     text-align-last: justify;

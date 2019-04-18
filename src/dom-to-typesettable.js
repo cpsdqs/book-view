@@ -125,10 +125,12 @@ function walkContent (node, state) {
             const parStyle = state.parStyles.top();
             state.makePar(parStyle);
 
-            if (node instanceof HTMLQuoteElement) parStyle.quote = true;
+            const isQuote = node instanceof HTMLQuoteElement;
+            if (isQuote) parStyle.quote = true;
             if (node.style.textAlign === 'left' || node.style.textAlign.includes('justify')) {
                 parStyle.align = 0;
-                parStyle.indent = true;
+                if (state.config.doubleParagraphs) parStyle.double = true;
+                else parStyle.indent = true;
             } else if (node.style.textAlign === 'center') {
                 parStyle.align = 2;
                 parStyle.indent = false;
@@ -136,9 +138,12 @@ function walkContent (node, state) {
                 parStyle.align = 3;
                 parStyle.indent = false;
             }
-            if (node instanceof HTMLParagraphElement) parStyle.indent = true;
-            if (node instanceof HTMLHRElement) {
+            if (node instanceof HTMLParagraphElement) {
+                if (state.config.doubleParagraphs) parStyle.double = true;
+                else parStyle.indent = true;
+            } if (node instanceof HTMLHRElement) {
                 state.makeSeparator();
+                parStyle.double = false;
                 parStyle.indent = false;
                 parStyle.align = 2;
                 // fake image node for height
@@ -151,8 +156,10 @@ function walkContent (node, state) {
 
             let first = true;
             for (let child of node.childNodes) {
-                if (node instanceof HTMLQuoteElement && !first) parStyle.join = true;
-                parStyle.joinNext = !!(node instanceof HTMLQuoteElement && child.nextElementSibling);
+                if (isQuote) {
+                    if (!first) parStyle.join = true;
+                    parStyle.joinNext = !!(parStyle.quote && child.nextElementSibling);
+                }
                 first = false;
                 walkContent(child, state);
             }
@@ -164,12 +171,13 @@ function walkContent (node, state) {
     }
 }
 
-export default function intoTypesettable (sourceContainer, context) {
+export default function intoTypesettable (sourceContainer, context, config = {}) {
     const paragraphs = [];
     let pendingPar = null;
 
     const state = {
         context,
+        config,
         textStyles: new ObjectStack({
             bold: false,
             italic: false,

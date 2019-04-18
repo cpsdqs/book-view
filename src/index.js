@@ -4,6 +4,7 @@ const config = {
     codeFontFamily: 'Menlo, Hack, Fira Mono, monospace',
     codeFontSize: 11,
     openKey: ';',
+    doubleParagraphs: false,
 };
 
 import intoTypesettable from './dom-to-typesettable';
@@ -19,7 +20,7 @@ const bookView = window.bookView = {
     render (node) {
         if (!(node instanceof Node)) throw new Error('Can’t render non-DOM node');
         const context = new dashset.Context(config);
-        bookView.view.render(bookView.intoTypesettable(node, context), context);
+        bookView.view.render(bookView.intoTypesettable(node, context, bookView.config), context);
     },
     knownHosts: {
         'archiveofourown.org' () {
@@ -50,7 +51,11 @@ const bookView = window.bookView = {
     }
 };
 
+let didInit = false;
+
 const handleKnownHosts = () => {
+    if (didInit) return;
+    didInit = true;
     for (const hostname in bookView.knownHosts) {
         if (location.hostname === hostname) {
             bookView.knownHosts[hostname]();
@@ -58,9 +63,13 @@ const handleKnownHosts = () => {
     }
 };
 
-if (document.readyState === 'interactive') {
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
     // allow external scripts to register known hosts before running
     requestAnimationFrame(handleKnownHosts);
 } else {
     window.addEventListener('DOMContentLoaded', handleKnownHosts);
 }
+
+window.addEventListener('load', () => {
+    if (!didInit) handleKnownHosts();
+})

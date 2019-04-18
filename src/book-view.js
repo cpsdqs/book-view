@@ -251,7 +251,7 @@ function typeset () {
 
             node.style.height = node.style.lineHeight = line.height + 'px';
 
-            if (par.quote) {
+            if (par.quote && !line.margin) {
                 node.classList.add('bv-quote');
                 if (par === prevPar || par.join) {
                     if (prevLine) prevLine.classList.add('bv-join-below');
@@ -260,7 +260,7 @@ function typeset () {
             }
 
             prevLine = node;
-            prevPar = par;
+            prevPar = !line.margin && par;
 
             if (par.separator) {
                 node.classList.add('bv-separator');
