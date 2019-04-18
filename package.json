@@ -1,0 +1,19 @@
+{
+  "name": "book-view",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "color": "^3.1.0",
+    "dashset": "git+https://github.com/cpsdqs/dashset.git",
+    "hyper": "0.0.6",
+    "hyphenation.en-us": "^0.2.1"
+  },
+  "devDependencies": {
+    "css-loader": "^2.1.1",
+    "less": "^3.9.0",
+    "less-loader": "^4.1.0",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.30.0",
+    "webpack-cli": "^3.3.0"
+  }
+}
