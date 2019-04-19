@@ -98,6 +98,7 @@ const onAnimationUpdate = () => {
     if (isStatic) {
         for (const node of currentNodes) {
             node.style.transform = '';
+            node.style.opacity = '';
         }
 
         const left = pageNodes[cfPage];

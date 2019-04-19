@@ -52,6 +52,9 @@ function walkContent (node, state) {
         // text node
         let line = node.textContent;
 
+        // skip empty text nodes (which are likely indentation artifacts)
+        if (!line.trim()) return;
+
         // split at whitespace and dashes
         const parts = [];
         let match;
@@ -90,7 +93,7 @@ function walkContent (node, state) {
         if (style.fontWeight.match(/^\d+$/)) textStyle.bold = +style.fontWeight > 450;
         else if (style.fontWeight === 'normal') textStyle.bold = false;
         else if (style.fontWeight === 'bold') textStyle.bold = true;
-        textStyle.italic = style.fontStyle === 'italic';
+        textStyle.italic = style.fontStyle === 'italic' || style.fontStyle === 'oblique';
         textStyle.smallcaps = style.fontVariantCaps === 'small-caps';
         try {
             textStyle.data.color = Color(node.style.color);
@@ -138,19 +141,18 @@ function walkContent (node, state) {
                 parStyle.align = 3;
                 parStyle.indent = false;
             }
+
             if (node instanceof HTMLParagraphElement) {
                 if (state.config.doubleParagraphs) parStyle.double = true;
                 else parStyle.indent = true;
-            } if (node instanceof HTMLHRElement) {
+            } else if (node instanceof HTMLHRElement) {
                 state.makeSeparator();
                 parStyle.double = false;
                 parStyle.indent = false;
                 parStyle.align = 2;
                 // fake image node for height
                 state.appendInline(new dashset.ImageNode(state.context, { height: 32 }));
-            }
-
-            if (node instanceof HTMLHeadingElement) {
+            } else if (node instanceof HTMLHeadingElement) {
                 textStyle.size = parseFloat(style.fontSize) / 16;
             }
 
@@ -160,7 +162,7 @@ function walkContent (node, state) {
                     if (!first) parStyle.join = true;
                     parStyle.joinNext = !!(parStyle.quote && child.nextElementSibling);
                 }
-                first = false;
+                if (child.nodeType === 1) first = false;
                 walkContent(child, state);
             }
 
