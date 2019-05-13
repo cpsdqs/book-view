@@ -40,6 +40,8 @@ let context = {};
 let lightMode = false;
 let currentPage = 0;
 
+const mod = (a, b) => ((a % b) + b) % b;
+
 // list of mounted page nodes, for easy diffing in onAnimationUpdate
 const mountedPageNodes = [];
 
@@ -76,7 +78,7 @@ const onAnimationUpdate = () => {
     const currentNodes = [];
 
     for (let i = least; i <= most; i++) {
-        if (!pageNodes[i]) continue;
+        if (!pageNodes[i] || i < 0) continue;
         currentNodes.push(pageNodes[i]);
         if (!mountedPageNodes.includes(pageNodes[i])) {
             mountedPageNodes.push(pageNodes[i]);
@@ -120,7 +122,7 @@ const onAnimationUpdate = () => {
             left.style.transform += ' translateX(-50%)';
         }
     } else {
-        const p = layout.twoPages ? (currentPage % 2) / 2 : (currentPage % 1);
+        const p = layout.twoPages ? mod(currentPage, 2) / 2 : mod(currentPage, 1);
 
         const prevLeft = pageNodes[cfPage];
         const prevRight = pageNodes[cfPage + 1];
@@ -167,6 +169,9 @@ function updatePages () {
     openSpring.target = isOpen ? 1 : 0;
     openSpring.start();
 
+    if (currentPage < 0) currentPage = 0;
+    if (currentPage >= typesetPages.length) currentPage = typesetPages.length - 1;
+
     if (layout.twoPages) {
         currentPage = Math.floor(currentPage / 2) * 2;
     }
@@ -180,10 +185,14 @@ function updatePages () {
 
 // typesets paragraphs and create DOM nodes
 function typeset () {
+    const isDefinitelyPortrait = window.innerWidth / window.innerHeight < 0.8;
+
     layout = {
-        twoPages: window.innerWidth > 900,
+        twoPages: window.innerWidth > context.width * 2.2,
         pageWidth: context.width,
-        pageHeight: Math.min(500, window.innerHeight * 0.64),
+        pageHeight: isDefinitelyPortrait
+            ? window.innerHeight * 0.64 < 500 ? window.innerHeight * 0.64 : window.innerHeight * 0.8
+            : Math.min(500, window.innerHeight * 0.64),
     };
 
     pageContainer.style.height = layout.pageHeight + 'px';
@@ -355,6 +364,7 @@ function typeset () {
                     }
                     image.src = item.src;
                     image.style.maxWidth = '100%';
+                    image.style.maxHeight = '100%';
                     node.append(image);
                 } else {
                     console.warn('[BV] unhandled item type', item.type);
@@ -391,42 +401,115 @@ let pendingTypeset = false;
 const forwardKeys = ['ArrowRight', 'Enter', ' ', 'l', 'd'];
 const backwardKeys = ['ArrowLeft', 'h', 'a'];
 
+function open () {
+    isOpen = true;
+
+    if (pendingTypeset) {
+        pendingTypeset = false;
+        typeset();
+    }
+
+    updatePages();
+}
+
+function close () {
+    isOpen = false;
+    updatePages();
+}
+
+function moveForward () {
+    currentPage += layout.twoPages ? 2 : 1;
+    if (currentPage >= pageNodes.length) {
+        currentPage = pageNodes.length - 1;
+        beforeNavigate();
+        view.emit('next-chapter');
+    }
+    if (layout.twoPages) currentPage = Math.floor(currentPage / 2) * 2;
+    updatePages();
+}
+
+function moveBackward () {
+    currentPage -= layout.twoPages ? 2 : 1;
+    if (currentPage < 0) {
+        currentPage = 0;
+        beforeNavigate();
+        view.emit('prev-chapter');
+    }
+    updatePages();
+}
+
 window.addEventListener('keydown', e => {
     if (document.activeElement !== document.body) return;
 
     if (e.key === config.openKey) {
         e.preventDefault();
-
-        isOpen = !isOpen;
-
-        if (pendingTypeset) {
-            pendingTypeset = false;
-            typeset();
-        }
-
-        updatePages();
-    } else if (forwardKeys.includes(e.key)) {
+        if (isOpen) close();
+        else open();
+    } else if (isOpen && forwardKeys.includes(e.key)) {
         e.preventDefault();
-
-        currentPage += layout.twoPages ? 2 : 1;
-        if (currentPage >= pageNodes.length) {
-            currentPage = pageNodes.length - 1;
-            beforeNavigate();
-            view.emit('next-chapter');
-        }
-        if (layout.twoPages) currentPage = Math.floor(currentPage / 2) * 2;
-        updatePages();
-    } else if (backwardKeys.includes(e.key)) {
+        moveForward();
+    } else if (isOpen && backwardKeys.includes(e.key)) {
         e.preventDefault();
-
-        currentPage -= layout.twoPages ? 2 : 1;
-        if (currentPage < 0) {
-            currentPage = 0;
-            beforeNavigate();
-            view.emit('prev-chapter');
-        }
-        updatePages();
+        moveBackward();
     }
+});
+
+let flipStartPos, flipStartX, prevFlipX, prevTouchTime;
+let closeStartPos, closeStartY, prevCloseY;
+container.addEventListener('touchstart', e => {
+    prevTouchTime = Date.now();
+    if (e.touches.length === 1) {
+        e.preventDefault();
+        positionSpring.locked = true;
+        openSpring.locked = true;
+        flipStartX = prevFlipX = e.touches[0].clientX;
+        closeStartY = prevCloseY = e.touches[0].clientY;
+        flipStartPos = positionSpring.value;
+        closeStartPos = openSpring.value;
+    }
+});
+
+container.addEventListener('touchmove', e => {
+    const deltaTime = (Date.now() - prevTouchTime) / 1000;
+    prevTouchTime = Date.now();
+
+    const dx = e.touches[0].clientX - flipStartX;
+    const velocity = (e.touches[0].clientX - prevFlipX) / Math.max(1e-5, deltaTime);
+    prevFlipX = e.touches[0].clientX;
+    const singlePageFlipDistance = layout.pageWidth;
+    positionSpring.velocity = -velocity / singlePageFlipDistance;
+    const maxFlip = layout.twoPages ? 2 : 1;
+    positionSpring.value = flipStartPos - clamp(dx / singlePageFlipDistance, -maxFlip, maxFlip);
+    positionSpring.update(0);
+    if (layout.twoPages) {
+        currentPage = Math.round(positionSpring.value + positionSpring.velocity / 5);
+    } else {
+        currentPage = Math.round(positionSpring.value + positionSpring.velocity / 10);
+    }
+
+    const dy = -e.touches[0].clientY + closeStartY;
+    const velocityY = -(e.touches[0].clientY - prevCloseY) / Math.max(1e-5, deltaTime);
+    prevCloseY = e.touches[0].clientY;
+    const closeDistance = window.innerHeight;
+    openSpring.velocity = velocityY / closeDistance;
+    const mappedValue = dy > 0 ? 0 : (-dy / closeDistance) ** 2;
+    openSpring.value = closeStartPos - clamp(mappedValue, 0, 1);
+    isOpen = openSpring.value + openSpring.velocity / 10 > 0.5;
+    openSpring.update(0);
+});
+
+container.addEventListener('touchcancel', e => {
+    positionSpring.locked = false;
+    openSpring.locked = false;
+    currentPage = Math.round(flipStartPos);
+    isOpen = Math.round(closeStartPos) === 1 ? true : false;
+    updatePages();
+});
+
+container.addEventListener('touchend', e => {
+    positionSpring.locked = false;
+    openSpring.locked = false;
+    updatePages();
 });
 
 window.addEventListener('resize', () => {
@@ -458,6 +541,10 @@ Object.assign(view, {
     setConfig: cfg => config = cfg,
     setTitle,
     render,
+    open,
+    close,
+    moveForward,
+    moveBackward,
 });
 
 export default view;

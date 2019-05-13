@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
         <title>Test</title>
     </head>
     <body>
+        <button id="open-btn">Open Book View (press the <code>;</code> key)</button>
         <section id="contents">
             <h1>Title text</h1>
             <p>
@@ -37,6 +40,10 @@
         <script src="../dist/main.js"></script>
         <script>
 bookView.render(document.querySelector('#contents'));
+
+document.querySelector('#open-btn').addEventListener('click', e => {
+    bookView.view.open();
+});
         </script>
     </body>
 </html>
